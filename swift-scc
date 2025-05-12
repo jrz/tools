@@ -28,20 +28,20 @@ SCRIPT_PATH="$1"
 SCRIPT_NAME=$(basename "$SCRIPT_PATH")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 
-CACHE_SUB_DIR="jrz-stc-cache"
-RUN_COUNT_ATTR="user.jrz_stc_runcount"
+CACHE_SUB_DIR="jrz-swift-scc-cache"
+RUN_COUNT_ATTR="user.jrz_swift_scc_runcount"
 MAX_RUN_INTERPRETED=3
 
 
 
 log() {
     if [ "$LOGGING" = true ]; then
-        echo "STC:  $*" >&2
+        echo "swift-scc:  $*" >&2
     fi
 }
 
 log_error() {
-    echo "STC:  $*" >&2
+    echo "swift-scc:  $*" >&2
 }
 
 
