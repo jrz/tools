@@ -1,0 +1,218 @@
+#!/usr/bin/env bash
+#
+# Swift Transparent Compiler
+#
+# This utility automatically manages Swift script execution by intelligently 
+# switching between interpretation and compilation modes.
+# It is indented as a drop-in replacement for the Swift shebang
+# in Swift scripts (intead of #!/usr/bin/env swift)
+#
+# BENEFITS:
+# - Eliminates Swift's interpreter startup overhead for faster performance
+# - Caches compiled binaries to avoid unnecessary recompilation
+# - Optimizes for development speed during initial iterations
+# - Ensures maximum performance in automated/non-interactive contexts
+#
+# BEHAVIOR:
+# - In non-interactive mode: immediately compiles if needed and executes the binary
+# - In interactive terminal: uses interpreter for first 3 executions, then compiles
+# - Maintains a cached binary that's automatically rebuilt when the source script changes
+#
+
+set -e
+
+LOGGING=true
+
+# Get the path of the Swift file being executed
+SCRIPT_PATH="$1"
+SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+
+CACHE_SUB_DIR="jrz-stc-cache"
+RUN_COUNT_ATTR="user.jrz_stc_runcount"
+MAX_RUN_INTERPRETED=3
+
+
+
+log() {
+    if [ "$LOGGING" = true ]; then
+        echo "STC:  $*" >&2
+    fi
+}
+
+log_error() {
+    echo "STC:  $*" >&2
+}
+
+
+# Get platform cache dir.
+get_cache_root_dir() {
+    # Darwin / macOS
+    if [ -d "$HOME/Library/Caches" ]; then
+        echo "$HOME/Library/Caches"
+        return 0
+    fi
+
+    # xdg
+    if [ -n "$XDG_CACHE_HOME" ]; then
+        if [ -n "$XDG_CACHE_HOME" ]; then
+            echo "$XDG_CACHE_HOME"
+            return 0
+        fi
+    fi
+
+    # Linux, bsd, wsl?
+    if [ -n "$HOME/.cache" ]; then
+        if [ -n "$HOME/.cache" ]; then
+            echo "$HOME/.cache"
+            return 0
+        fi
+    fi
+
+    log_error "Unable to detect user cache dir. Platform probably unsupported."
+    return 1
+}
+
+read_count_attr() {
+    # macOS
+    if command -v xattr > /dev/null; then
+        # check if we can read and have attribute
+        run_count=0
+        if xattr -p "$RUN_COUNT_ATTR" "$SCRIPT_PATH" &>/dev/null; then
+            run_count=$(xattr -p "$RUN_COUNT_ATTR" "$SCRIPT_PATH") > /dev/null
+        fi
+        echo $run_count
+        return 0
+    fi
+
+    # Linux (attr package on debian)
+    if command -v getfattr > /dev/null; then
+        run_count=$(getfattr --only-values -e text -n "$RUN_COUNT_ATTR" "$SCRIPT_PATH")
+        echo $run_count
+        return 0
+    fi
+
+    # Linux (xattr package on debian)
+    if command -v xattr > /dev/null; then
+        run_count=$(xattr -p "$RUN_COUNT_ATTR" "$SCRIPT_PATH")
+        echo $run_count
+        return 0
+    fi
+
+    # TODO: store in cache?
+    log_error "Warning: Cannot read extended file attribute. Will not autocompile in TTY."
+    echo 0
+    return 0
+}
+
+write_count_attr() {
+    # macOS
+    if command -v xattr > /dev/null; then
+        # TODO: this can fail (for example on fat fs)
+        xattr -w "$RUN_COUNT_ATTR" "$1" "$SCRIPT_PATH" >&2
+        return 0
+    fi
+
+    # Linux (attr package on debian)
+    if command -v setfattr > /dev/null; then
+        run_count=$(setfattr -n "$RUN_COUNT_ATTR" -v "$1" "$SCRIPT_PATH")
+        return 0
+    fi
+    
+    # Linux (xattr package on debian)
+    if command -v xattr > /dev/null; then
+        run_count=$(xattr -w "$RUN_COUNT_ATTR" "$1" "$SCRIPT_PATH")
+        return 0
+    fi
+
+    # TODO: store in cache?
+    log_error "Warning: Cannot write extended file attribute."
+    echo 0
+    return 0
+}
+
+
+CACHE_DIR="$(get_cache_root_dir)/$CACHE_SUB_DIR"
+COMPILED_PATH="$CACHE_DIR/$(basename "$SCRIPT_PATH").bin"
+if [ -n "$CACHE_DIR" ]; then
+    mkdir -p "$CACHE_DIR"
+fi
+
+
+use_compiled=true
+should_compile=false
+
+# Compile if:
+# 1. Compiled version doesn't exist, OR
+# 2. Source file is newer than compiled version
+# 3. This script is newer than compiled version
+if [ ! -f "$COMPILED_PATH" ]; then
+    log "Script is newer than compiled version"
+    should_compile=true
+fi
+
+if [ "$SCRIPT_PATH" -nt "$COMPILED_PATH" ]; then
+    log "Script is newer than compiled version"
+    should_compile=true
+fi
+
+if [ "$0" -nt "$COMPILED_PATH" ]; then
+    log "Swift Transparent Compiler is newer than compiled version"
+    should_compile=true
+fi
+
+# But not when the script is invoked by a TTY (interactive terminal)
+# TODO: [[ Remove bash dependency ]]
+if [[ "$should_compile" = true  && -t 0 && -t 1 ]]; then    
+    run_count=0
+    # Check if the attribute is already set
+    run_count=$(read_count_attr)
+
+    # After three runs
+    if [ $run_count -ge $MAX_RUN_INTERPRETED ]; then
+        log Autocompile after $MAX_RUN_INTERPRETED runs in TTY
+        should_compile=true
+        use_compiled=true
+    else
+        # Skip compilation and increment run-count
+        new_run_count=$((run_count + 1))
+        log Skip compiling in interactive mode. Increment runcount $run_count to $new_run_count
+        write_count_attr "$new_run_count"
+        should_compile=false
+        use_compiled=false
+    fi
+fi
+
+
+# Compile or execute
+# Note that exec replaces the process, so we don't need to return or exit
+if [ "$use_compiled" = true ]; then
+    if [ "$should_compile" = true ]; then
+        log "Compiling $SCRIPT_PATH..."
+        swiftc "$SCRIPT_PATH" -o "$COMPILED_PATH"
+        
+        # If compilation was ok
+        if [ $? -eq 0 ]; then
+            log "Script successfully compiled"
+            # Reset the counter and execute
+            write_count_attr 0
+            
+            exec "$COMPILED_PATH" "${@:2}"
+        else
+            # Execute the compiled binary
+            log_error "Compilation failed, falling back to interpretation"
+            exec swift "$SCRIPT_PATH" "${@:2}"
+        fi
+    else
+        # Everything was up to date - execute binary
+        log Executing compiled binary
+        exec "$COMPILED_PATH" "${@:2}"
+    fi
+else
+    log Interpreting script
+    exec swift "$SCRIPT_PATH" "${@:2}"
+fi
+
+
+log_error Unreachable code. Should never happen. Exec should replace the current process
+exit 127
