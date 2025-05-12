@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Swift Transparent Compiler
+# Swift Script Caching Compiler (swift-scc)
 #
 # This utility automatically manages Swift script execution by intelligently 
 # switching between interpretation and compilation modes.
@@ -157,7 +157,7 @@ if [ "$SCRIPT_PATH" -nt "$COMPILED_PATH" ]; then
 fi
 
 if [ "$0" -nt "$COMPILED_PATH" ]; then
-    log "Swift Transparent Compiler is newer than compiled version"
+    log "Swift Script Caching Compiler is newer than compiled version"
     should_compile=true
 fi
 

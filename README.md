@@ -1,14 +1,14 @@
 # Various tools
 
 
-## Swift Transparent Compiler
-This utility automatically manages Swift script execution by intelligently switching between interpretation and compilation modes. It is indented as a drop-in replacement for the Swift shebang in Swift scripts (```#!/usr/bin/env swift_transparent_compiler``` intead of ```#!/usr/bin/env swift```)
+## Swift Script Caching Compiler
+This utility automatically manages Swift script execution by intelligently switching between interpretation and compilation modes. It is indented as a drop-in replacement for the Swift shebang in Swift scripts (```#!/usr/bin/env swift-scc``` intead of ```#!/usr/bin/env swift```)
 
 ### INSTALLATION:
 Copy the script somewhere in your path
 
 ### USAGE:
-Replace your ```#!/usr/bin/env swift``` with ```#!/usr/bin/env swift_transparant_compiler```
+Replace your ```#!/usr/bin/env swift``` with ```#!/usr/bin/env swift-scc```
 
 ### BENEFITS:
 - Eliminates Swift's interpreter startup overhead for faster performance
