@@ -55,7 +55,7 @@ get_cache_root_dir() {
 
     # xdg
     if [ -n "$XDG_CACHE_HOME" ]; then
-        if [ -n "$XDG_CACHE_HOME" ]; then
+        if [ -d "$XDG_CACHE_HOME" ]; then
             echo "$XDG_CACHE_HOME"
             return 0
         fi
@@ -63,7 +63,7 @@ get_cache_root_dir() {
 
     # Linux, bsd, wsl?
     if [ -n "$HOME/.cache" ]; then
-        if [ -n "$HOME/.cache" ]; then
+        if [ -d "$HOME/.cache" ]; then
             echo "$HOME/.cache"
             return 0
         fi
