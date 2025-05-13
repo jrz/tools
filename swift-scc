@@ -147,7 +147,7 @@ should_compile=false
 # 2. Source file is newer than compiled version
 # 3. This script is newer than compiled version
 if [ ! -f "$COMPILED_PATH" ]; then
-    log "Script is newer than compiled version"
+    log "No compiled version exists yet"
     should_compile=true
 fi
 
