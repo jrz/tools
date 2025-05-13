@@ -170,13 +170,13 @@ if [[ "$should_compile" = true  && -t 0 && -t 1 ]]; then
 
     # After three runs
     if [ $run_count -ge $MAX_RUN_INTERPRETED ]; then
-        log Autocompile after $MAX_RUN_INTERPRETED runs in TTY
+        log "Autocompile after $MAX_RUN_INTERPRETED runs in TTY"
         should_compile=true
         use_compiled=true
     else
         # Skip compilation and increment run-count
         new_run_count=$((run_count + 1))
-        log Skip compiling in interactive mode. Increment runcount $run_count to $new_run_count
+        log "Skip compiling in interactive mode. Increment runcount $run_count to $new_run_count"
         write_count_attr "$new_run_count"
         should_compile=false
         use_compiled=false
@@ -205,14 +205,14 @@ if [ "$use_compiled" = true ]; then
         fi
     else
         # Everything was up to date - execute binary
-        log Executing compiled binary
+        log "Executing compiled binary"
         exec "$COMPILED_PATH" "${@:2}"
     fi
 else
-    log Interpreting script
+    log "Interpreting script"
     exec swift "$SCRIPT_PATH" "${@:2}"
 fi
 
 
-log_error Unreachable code. Should never happen. Exec should replace the current process
+log_error "Unreachable code. Should never happen. Exec should replace the current process"
 exit 127
