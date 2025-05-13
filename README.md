@@ -1,5 +1,5 @@
 # Various tools
-- [Swift Script Caching Compiler](#-swift-script-caching-compiler)
+- [Swift Script Caching Compiler](#swift-script-caching-compiler)
 
 ## Swift Script Caching Compiler
 
@@ -11,6 +11,7 @@ Copy the script somewhere in your path
 ### USAGE:
 Replace your ```#!/usr/bin/env swift``` with ```#!/usr/bin/env swift-scc```
 You can also simply run a script using: ```swift-scc example.swift```
+
 To enable detailed logging about compilation, set the SWIFT_SCC_LOGGING environment variable.
 You can either ```export SWIFT_SCC_LOGGING=true``` or run ```SWIFT_SCC_LOGGING=true swift-scc example.swift```
 ### BENEFITS:
