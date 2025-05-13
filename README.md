@@ -1,7 +1,8 @@
 # Various tools
-
+- [Swift Script Caching Compiler](#-swift-script-caching-compiler)
 
 ## Swift Script Caching Compiler
+
 This utility automatically manages Swift script execution by intelligently switching between interpretation and compilation modes. It is indented as a drop-in replacement for the Swift shebang in Swift scripts (```#!/usr/bin/env swift-scc``` intead of ```#!/usr/bin/env swift```)
 
 ### INSTALLATION:
