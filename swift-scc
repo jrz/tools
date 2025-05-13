@@ -21,7 +21,12 @@
 
 set -e
 
-LOGGING=true
+LOGGING=false
+
+if [ "$SWIFT_SCC_LOGGING" = true ] || [ "$SWIFT_SCC_LOGGING" = 1 ]; then
+  LOGGING=true
+fi
+
 
 # Get the path of the Swift file being executed
 SCRIPT_PATH="$1"
